@@ -1,0 +1,21 @@
+# === Especifico do Projeto / Code::Blocks ===
+*.cbp
+*.layout
+*.depend
+bin/
+obj/
+
+# === Binarios e Arquivos Temporarios (Padrao C) ===
+*.exe
+*.o
+*.obj
+*.out
+*.app
+*.hex
+
+# === Debug e Logs ===
+*.d
+*.map
+*.log
+*.pdb
+*.idb
