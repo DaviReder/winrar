@@ -1,7 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "include/codificar.h"
+#include "../include/codificar.h"
+
+// ====================================================
+// =========== FUNCOES AUXILIARES DE BITS   ===========
+// ====================================================
+
+// Retorna o valor do bit na posição i de um byte
+unsigned int testa_bit(unsigned char byte, int i) {
+    unsigned char mascara = (1 << i);
+    return byte & mascara;
+}
 
 // ====================================================
 // =========== FUNCOES TABELA DE FREQUENCIA ===========
@@ -70,7 +80,6 @@ void preencher_lista(unsigned int tab[], Lista *lista){
                 novo->esq = NULL;
                 novo->frequencia = tab[i];
                 novo->prox = NULL;
-
                 inserir_ordenado(lista, novo);
             }
             else{
@@ -97,14 +106,12 @@ void imprimir_lista(Lista *lista){
 
 No* remover_inicio(Lista *lista){
     No *aux = NULL;
-
     if(lista->inicio){
         aux = lista->inicio;
         lista->inicio = aux->prox;
         aux->prox = NULL;
         lista->tam--;
     }
-
     return aux;
 }
 
@@ -114,23 +121,28 @@ No* montar_arvore(Lista *lista){
         primeiro = remover_inicio(lista);
         segundo = remover_inicio(lista);
         novo = malloc(sizeof(No));
-
         if(novo){
             novo->caracter = '+';
             novo->frequencia = primeiro->frequencia + segundo->frequencia;
             novo->esq = primeiro;
             novo->dir = segundo;
             novo->prox = NULL;
-
             inserir_ordenado(lista, novo);
         }
         else{
             printf("\nErro ao alocar memória: 'montar_arvore'.");
             break;
         }
-
     }
     return lista->inicio;
+}
+
+// Limpa a árvore da memória (recursivo)
+void liberar_arvore(No *raiz) {
+    if(raiz == NULL) return;
+    liberar_arvore(raiz->esq);
+    liberar_arvore(raiz->dir);
+    free(raiz);
 }
 
 void imprimir_arvore(No *raiz, int tam){
@@ -149,25 +161,24 @@ void imprimir_arvore(No *raiz, int tam){
 
 int altura_arvore(No *raiz){
     int esq, dir;
-    if(raiz == NULL){
-        return -1;
-    }
-    else{
-        esq = altura_arvore(raiz->esq) +1;
-        dir = altura_arvore(raiz->dir) +1;
-        if(esq > dir) return esq;
-        else return dir;
-    }
+    if(raiz == NULL) return -1;
+    esq = altura_arvore(raiz->esq) + 1;
+    dir = altura_arvore(raiz->dir) + 1;
+    return (esq > dir) ? esq : dir;
 }
 
 char** aloca_dicionario(int colunas){
-    char **dicionario;
-    dicionario = malloc(sizeof(char*) * TAM);
-
+    char **dicionario = malloc(sizeof(char*) * TAM);
     for(int i=0; i<TAM; i++){
         dicionario[i] = calloc(colunas, sizeof(char));
     }
     return dicionario;
+}
+
+// Limpa o dicionário da memória
+void liberar_dicionario(char **dicionario) {
+    for(int i = 0; i < TAM; i++) free(dicionario[i]);
+    free(dicionario);
 }
 
 void gerar_dicionario(char **dicionario, No *raiz, char *caminho, int colunas){
@@ -178,10 +189,8 @@ void gerar_dicionario(char **dicionario, No *raiz, char *caminho, int colunas){
     else{
         strcpy(esquerda, caminho);
         strcpy(direita, caminho);
-
         strcat(esquerda, "0");
         strcat(direita, "1");
-
         gerar_dicionario(dicionario, raiz->esq, esquerda, colunas);
         gerar_dicionario(dicionario, raiz->dir, direita, colunas);
     }
@@ -193,7 +202,6 @@ void imprimir_dicionario(char **dicionario){
         if(strlen(dicionario[i]) > 0)
             printf("%3d: %s\n", i, dicionario[i]);
     }
-    printf("\n");
 }
 
 // ===================================
@@ -203,7 +211,7 @@ void imprimir_dicionario(char **dicionario){
 int calc_tamanho_string(char **dicionario, unsigned char *texto){
     int i=0, tam=0;
     while(texto[i] != '\0'){
-        tam = tam+strlen(dicionario[texto[i]]);
+        tam += strlen(dicionario[texto[i]]);
         i++;
     }
     return tam+1;
@@ -212,7 +220,6 @@ int calc_tamanho_string(char **dicionario, unsigned char *texto){
 char* codificar(char **dicionario, unsigned char *texto){
     int i=0, tam = calc_tamanho_string(dicionario, texto);
     char *codigo = calloc(tam, sizeof(char));
-
     while(texto[i] != '\0'){
         strcat(codigo, dicionario[texto[i]]);
         i++;
@@ -220,138 +227,125 @@ char* codificar(char **dicionario, unsigned char *texto){
     return codigo;
 }
 
-// ===================================
-// =========== DECODIFICAR ===========
-// ===================================
-
-char* decodificar(unsigned char texto[], No *raiz){
-    No *aux = raiz;
-    char temp[2];
-    char *decodificado = calloc(strlen(texto), sizeof(char));
-
-    for(int i=0; texto[i] != '\0'; i++){
-        if(texto[i] == '0'){
-            aux = aux->esq;
-        }
-        else{
-            aux = aux->dir;
-        }
-
-        if(aux->esq == NULL && aux->dir == NULL){
-            temp[0] = aux->caracter;
-            temp[1] = '\0';
-            strcat(decodificado, temp);
-            aux = raiz;
-        }
-    }
-
-    return decodificado;
-}
-
 // =========================================
 // =========== MANIPULAR ARQUIVO ===========
 // =========================================
 
-void compactar(unsigned char codificado[]){
-    FILE *arquivo = fopen("compactado.dc", "wb");
-    int i=0, j=7;
-    unsigned char mascara, byte=0;
-
-    if(arquivo == NULL){
-        fclose(arquivo);
-        printf("\nErro ao abrir arquivo em 'compactar'.");
+void compactar(unsigned char codificado[], unsigned int tabela[]){
+    FILE *arquivo = fopen("data/compactado.dc", "wb");
+    if(arquivo == NULL) {
+        printf("\nErro ao criar arquivo.");
         return;
     }
 
-    while(codificado[i] != '\0'){
-        mascara=1;
-        if(codificado[i] == '1'){
+    int total_registros = 0;
+    for(int i = 0; i < TAM; i++) if(tabela[i] > 0) total_registros++;
+
+    fwrite(&total_registros, sizeof(int), 1, arquivo);
+
+    long pos_lixo = ftell(arquivo);
+    unsigned char lixo = 0;
+    fwrite(&lixo, sizeof(unsigned char), 1, arquivo);
+
+    for(int i = 0; i < TAM; i++) {
+        if(tabela[i] > 0) {
+            unsigned char c = (unsigned char)i;
+            fwrite(&c, sizeof(unsigned char), 1, arquivo);
+            fwrite(&tabela[i], sizeof(unsigned int), 1, arquivo);
+        }
+    }
+
+    int i = 0, j = 7;
+    unsigned char mascara, byte = 0;
+
+    while(codificado[i] != '\0') {
+        mascara = 1;
+        if(codificado[i] == '1') {
             mascara = mascara << j;
             byte = byte | mascara;
         }
         j--;
-
-        if(j<0){
+        if(j < 0) {
             fwrite(&byte, sizeof(unsigned char), 1, arquivo);
-            byte=0;
-            j=7;
+            byte = 0;
+            j = 7;
         }
         i++;
     }
-    if(j!=7){
+
+    if(j != 7) {
         fwrite(&byte, sizeof(unsigned char), 1, arquivo);
+        lixo = j + 1;
+        fseek(arquivo, pos_lixo, SEEK_SET);
+        fwrite(&lixo, sizeof(unsigned char), 1, arquivo);
     }
+
     fclose(arquivo);
+    printf("\nArquivo compactado com sucesso!");
 }
 
-unsigned int testa_bit(unsigned char byte, int i){
-    unsigned char mascara = (1 << i);
-    return byte & mascara;
-}
-
-void descompactar(No *raiz){
-    FILE *arquivo = fopen("compactado.dc", "rb");
-    unsigned char byte;
-    No *aux = raiz;
-
-    if(arquivo == NULL){
-        fclose(arquivo);
-        printf("\nErro ao abrir arquivo em 'descompactar'.");
-        return;
-    }
-
-    while(fread(&byte, sizeof(unsigned char), 1, arquivo)){
-        for(int i=7; i>=0; i--){
-            if(testa_bit(byte, i))
-                aux = aux->dir;
-            else
-                aux = aux->esq;
-
-            if(aux->dir == NULL && aux->esq == NULL){
-                printf("%c", aux->caracter);
-                aux = raiz;
-            }
-        }
-    }
-    printf("\n");
-    fclose(arquivo);
-}
+// ================================================
+// =========== ENTRADA DE TEXTO POR LOG ===========
+// ================================================
 
 int descobrir_tamanho(){
-    FILE *arquivo = fopen("log.txt", "r");
-    int tam=0;
-
-    if(arquivo == NULL){
-        fclose(arquivo);
-        printf("\nErro ao abrir arquivo! (descobrir_tamanho)\n");
-        return 0;
-    }
-
-    while(fgetc(arquivo) != -1){
-        tam++;
-    }
+    FILE *arquivo = fopen("data/log.txt", "r");
+    if(arquivo == NULL) return 0;
+    fseek(arquivo, 0, SEEK_END);
+    int tam = ftell(arquivo);
+    fclose(arquivo);
     return tam;
 }
 
 void ler_texto(unsigned char *frase){
-
-    FILE *arquivo = fopen("log.txt", "r");
-    int i=0;
-    char letra;
-
-    if(arquivo == NULL){
-        fclose(arquivo);
-        printf("\nErro ao abrir arquivo! (ler_texto)\n");
-        return;
+    FILE *arquivo = fopen("data/log.txt", "r");
+    if(arquivo == NULL) return;
+    int i = 0;
+    int letra;
+    while((letra = fgetc(arquivo)) != EOF){
+        frase[i++] = (unsigned char)letra;
     }
-
-    while(!feof(arquivo)){
-        letra = fgetc(arquivo);
-        if(letra != -1){
-            frase[i] = letra;
-            i++;
-        }
-    }
+    frase[i] = '\0';
     fclose(arquivo);
 }
 
+// =============================================================
+// =========== EXECUTAR FLUXO DE COMPACTACAO         ===========
+// =============================================================
+
+void executar_compactacao() {
+    int tam = descobrir_tamanho();
+    if(tam == 0) {
+        printf("\nArquivo data/log.txt vazio ou inexistente.\n");
+        return;
+    }
+
+    unsigned char *frase = calloc(tam + 1, sizeof(unsigned char));
+    if (!frase) return;
+    ler_texto(frase);
+
+    unsigned int tabela_frequencia[TAM];
+    inicializa_com_zero(tabela_frequencia);
+    preenche_tabela(frase, tabela_frequencia);
+
+    Lista lista;
+    criar_lista(&lista);
+    preencher_lista(tabela_frequencia, &lista);
+    No *arvore = montar_arvore(&lista);
+
+    int colunas = altura_arvore(arvore) + 1;
+    char **dicionario = aloca_dicionario(colunas);
+    gerar_dicionario(dicionario, arvore, "", colunas);
+
+    char *codigo = codificar(dicionario, frase);
+
+    compactar(codigo, tabela_frequencia);
+
+    // Limpeza completa da memória
+    free(frase);
+    free(codigo);
+    liberar_dicionario(dicionario);
+    liberar_arvore(arvore);
+
+    printf("\n>>> Processo concluído com sucesso!\n");
+}
