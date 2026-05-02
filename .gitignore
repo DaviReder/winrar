@@ -4,6 +4,7 @@
 *.depend
 bin/
 obj/
+compactado.dc
 
 # === Binarios e Arquivos Temporarios (Padrao C) ===
 *.exe
