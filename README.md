@@ -15,25 +15,16 @@ Nota: Atualmente, a descompressão requer que a árvore de Huffman permaneça na
 ---
 
 ## 🚀 Como Rodar o Projeto
-Para compilar e executar este projeto, você precisará de um ambiente com o compilador gcc.
 
-1. Clonar o repositório
-Bash
-git clone https://github.com/seu-usuario/seu-repositorio.git
-cd seu-repositorio
-2. Preparar o arquivo de teste
-Certifique-se de que existe um arquivo chamado log.txt na raiz do projeto com o conteúdo que deseja testar.
+Para compilar e executar este projeto, você precisará de um ambiente com o compilador `gcc` instalado.
+Abra o terminal e execute:
 
-3. Compilar e Executar
-No terminal, utilize os comandos:
-
-Bash
-# Compilação
+```bash
+git clone [https://github.com/DaviReder/winrar.git](https://github.com/DaviReder/winrar.git)
+cd winrar
 gcc main.c -o huffman
-
-# Execução
 ./huffman
-
+```
 
 ## 📈 Próximos Passos (Roadmap)
 
