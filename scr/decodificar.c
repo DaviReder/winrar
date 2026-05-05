@@ -32,18 +32,18 @@ char* decodificar(unsigned char texto[], No *raiz){
 
 
 // ==============================================================
-// =========== DECODIFICAR POR MANIPULA«√O DE ARQUIVO ===========
+// =========== DECODIFICAR POR MANIPULA√á√ÉO DE ARQUIVO ===========
 // ==============================================================
 
 
 void descompactar(char *nome_compactado, char *nome_saida) {
     FILE *entrada = fopen(nome_compactado, "rb");
-    FILE *saida = fopen(nome_saida, "wb"); // Usar "wb" È mais seguro para bin·rios, embora texto funcione
+    FILE *saida = fopen(nome_saida, "wb"); // Usar "wb" √© mais seguro para bin√°rios, embora texto funcione
 
     if(!entrada || !saida) {
         if(entrada) fclose(entrada);
         if(saida) fclose(saida);
-        printf("\nErro ao abrir os arquivos para descompactaÁ„o!\n");
+        printf("\nErro ao abrir os arquivos para descompacta√ß√£o!\n");
         return;
     }
 
@@ -64,7 +64,7 @@ void descompactar(char *nome_compactado, char *nome_saida) {
         tabela_recuperada[c] = f;
     }
 
-    // 2. Reconstruir a ¡rvore
+    // 2. Reconstruir a √Årvore
     Lista lista;
     criar_lista(&lista);
     preencher_lista(tabela_recuperada, &lista);
@@ -74,7 +74,7 @@ void descompactar(char *nome_compactado, char *nome_saida) {
     // 3. Decodificar e Salvar no Arquivo
     unsigned char byte_atual, proximo_byte;
 
-    // LÛgica robusta para ler bit a bit ignorando o lixo no ˙ltimo byte
+    // L√≥gica robusta para ler bit a bit ignorando o lixo no √∫ltimo byte
     if(fread(&byte_atual, sizeof(unsigned char), 1, entrada)) {
         while(fread(&proximo_byte, sizeof(unsigned char), 1, entrada)) {
             for(int i = 7; i >= 0; i--) {
@@ -89,8 +89,8 @@ void descompactar(char *nome_compactado, char *nome_saida) {
             byte_atual = proximo_byte;
         }
 
-        // Processar o ˙ltimo byte considerando o lixo
-        // Se lixo for 3, processamos de 7 atÈ 3 (5 bits v·lidos)
+        // Processar o √∫ltimo byte considerando o lixo
+        // Se lixo for 3, processamos de 7 at√© 3 (5 bits v√°lidos)
         for(int i = 7; i >= (int)lixo; i--) {
             if(testa_bit(byte_atual, i)) aux = aux->dir;
             else aux = aux->esq;
@@ -102,10 +102,10 @@ void descompactar(char *nome_compactado, char *nome_saida) {
         }
     }
 
-    // --- LIMPEZA CRÕTICA ---
-    liberar_arvore(raiz); // VocÍ criou essa funÁ„o no codificar.c, use-a aqui!
+    // --- LIMPEZA CR√çTICA ---
+    liberar_arvore(raiz);
     fclose(entrada);
     fclose(saida);
 
-    printf("\nDescompactaÁ„o concluÌda! Arquivo '%s' gerado.\n", nome_saida);
+    printf("\nDescompacta√ß√£o conclu√≠da! Arquivo '%s' gerado.\n", nome_saida);
 }
