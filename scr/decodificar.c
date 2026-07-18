@@ -7,42 +7,50 @@
 // =========== DECODIFICAR POR PASSAGEM ===========
 // ================================================
 
+char* decodificar(unsigned char texto[], No *raiz) {
+    if (raiz == NULL || texto == NULL) return NULL;
 
-char* decodificar(unsigned char texto[], No *raiz){
     No *aux = raiz;
-    char temp[2];
-    char *decodificado = calloc(strlen(texto), sizeof(char));
-    for(int i=0; texto[i] != '\0'; i++){
-        if(texto[i] == '0'){
+
+    // Aloca memória baseada no tamanho da string binária de entrada.
+    // O texto decodificado sempre será menor ou igual ao tamanho dos bits informados.
+    char *decodificado = calloc(strlen((char*)texto) + 1, sizeof(char));
+    if (!decodificado) {
+        printf("\nErro ao alocar memoria em 'decodificar'.\n");
+        return NULL;
+    }
+
+    int idx = 0; // Índice de controle para inserção direta em O(1)
+
+    for (int i = 0; texto[i] != '\0'; i++) {
+        if (texto[i] == '0') {
             aux = aux->esq;
-        }
-        else{
+        } else {
             aux = aux->dir;
         }
-        if(aux->esq == NULL && aux->dir == NULL){
-            temp[0] = aux->caracter;
-            temp[1] = '\0';
-            strcat(decodificado, temp);
-            aux = raiz;
+
+        // Verifica se chegou em um nó folha
+        if (aux->esq == NULL && aux->dir == NULL) {
+            decodificado[idx++] = aux->caracter; // Inserção direta na memória
+            aux = raiz; // Reseta para o topo da árvore
         }
     }
+
+    decodificado[idx] = '\0'; // Garante o fechamento correto da string
     return decodificado;
-
 }
-
 
 // ==============================================================
 // =========== DECODIFICAR POR MANIPULAÇÃO DE ARQUIVO ===========
 // ==============================================================
 
-
 void descompactar(char *nome_compactado, char *nome_saida) {
     FILE *entrada = fopen(nome_compactado, "rb");
-    FILE *saida = fopen(nome_saida, "wb"); // Usar "wb" é mais seguro para binários, embora texto funcione
+    FILE *saida = fopen(nome_saida, "wb");
 
-    if(!entrada || !saida) {
-        if(entrada) fclose(entrada);
-        if(saida) fclose(saida);
+    if (!entrada || !saida) {
+        if (entrada) fclose(entrada);
+        if (saida) fclose(saida);
         printf("\nErro ao abrir os arquivos para descompactação!\n");
         return;
     }
@@ -54,9 +62,9 @@ void descompactar(char *nome_compactado, char *nome_saida) {
     fread(&lixo, sizeof(unsigned char), 1, entrada);
 
     unsigned int tabela_recuperada[TAM];
-    for(int i = 0; i < TAM; i++) tabela_recuperada[i] = 0;
+    for (int i = 0; i < TAM; i++) tabela_recuperada[i] = 0;
 
-    for(int i = 0; i < total_registros; i++) {
+    for (int i = 0; i < total_registros; i++) {
         unsigned char c;
         unsigned int f;
         fread(&c, sizeof(unsigned char), 1, entrada);
@@ -75,13 +83,13 @@ void descompactar(char *nome_compactado, char *nome_saida) {
     unsigned char byte_atual, proximo_byte;
 
     // Lógica robusta para ler bit a bit ignorando o lixo no último byte
-    if(fread(&byte_atual, sizeof(unsigned char), 1, entrada)) {
-        while(fread(&proximo_byte, sizeof(unsigned char), 1, entrada)) {
-            for(int i = 7; i >= 0; i--) {
-                if(testa_bit(byte_atual, i)) aux = aux->dir;
+    if (fread(&byte_atual, sizeof(unsigned char), 1, entrada)) {
+        while (fread(&proximo_byte, sizeof(unsigned char), 1, entrada)) {
+            for (int i = 7; i >= 0; i--) {
+                if (testa_bit(byte_atual, i)) aux = aux->dir;
                 else aux = aux->esq;
 
-                if(aux->dir == NULL && aux->esq == NULL) {
+                if (aux->dir == NULL && aux->esq == NULL) {
                     fputc(aux->caracter, saida);
                     aux = raiz;
                 }
@@ -91,11 +99,11 @@ void descompactar(char *nome_compactado, char *nome_saida) {
 
         // Processar o último byte considerando o lixo
         // Se lixo for 3, processamos de 7 até 3 (5 bits válidos)
-        for(int i = 7; i >= (int)lixo; i--) {
-            if(testa_bit(byte_atual, i)) aux = aux->dir;
+        for (int i = 7; i >= (int)lixo; i--) {
+            if (testa_bit(byte_atual, i)) aux = aux->dir;
             else aux = aux->esq;
 
-            if(aux->dir == NULL && aux->esq == NULL) {
+            if (aux->dir == NULL && aux->esq == NULL) {
                 fputc(aux->caracter, saida);
                 aux = raiz;
             }
